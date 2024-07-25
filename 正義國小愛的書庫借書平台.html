@@ -82,6 +82,8 @@
     </div>
 
     <script>
+      const id = '66a112bcad19ca34f88c3b20'
+        const url = `https://api.jsonbin.io/v3/b/${id}`
         class Book {
             constructor(title, link, grade, coverUrl, returnDate) {
                 this.title = title;
@@ -181,8 +183,12 @@
             }
         }
 
+        
+        
         function saveData() {
             localStorage.setItem('bookLendingPlatformData', JSON.stringify(platform.books));
+            console.log('11111', JSON.stringify(platform.books))
+            putData(JSON.stringify(platform.books))
         }
 
         const platform = new BookLendingPlatform();
@@ -284,21 +290,49 @@
             const coverFile = document.getElementById('bookCover').files[0];
 
             if (grade && coverFile && returnDate) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const coverUrl = event.target.result;
-                    if (platform.addBook(title, link, grade, coverUrl, returnDate)) {
-                        alert('書籍新增成功！');
-                        updateBookList();
-                    } else {
-                        alert('書籍已存在！');
-                    }
-                };
-                reader.readAsDataURL(coverFile);
-                this.reset();
-            } else {
-                alert('請填寫所有必要資訊並上傳封面圖片！');
-            }
+            // Create a FileReader
+            const reader = new FileReader();
+
+            // Event listener for when FileReader finishes reading file
+            reader.onload = function (event) {
+              // Create an image element
+              const img = new Image();
+              img.onload = function () {
+                // Create a canvas element to resize the image
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Calculate new dimensions to keep aspect ratio and reduce size
+                let scaleFactor = 1;
+                if (img.width > 800 || img.height > 800) {
+                  scaleFactor = Math.min(800 / img.width, 800 / img.height);
+                }
+                canvas.width = img.width * scaleFactor;
+                canvas.height = img.height * scaleFactor;
+
+                // Draw image on canvas and get base64 URL with desired quality
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const base64Url = canvas.toDataURL('image/jpeg', 0.3); // Adjust quality here (0.7 is 70%)
+
+                // Add book with resized/compressed image
+                if (platform.addBook(title, link, grade, base64Url, returnDate)) {
+                  alert('書籍新增成功！');
+                  updateBookList();
+                } else {
+                  alert('書籍已存在！');
+                }
+              };
+
+              // Set source of image element to loaded file
+              img.src = event.target.result;
+            };
+
+            // Read file as data URL
+            reader.readAsDataURL(coverFile);
+            this.reset();
+          } else {
+            alert('請填寫所有必要資訊並上傳封面圖片！');
+          }
         });
 
         function lendBook(grade, title, weekIndex) {
@@ -351,8 +385,30 @@
             }
         }
 
+        
+        function getData() {
+          fetch(url, {
+            method: "GET",
+            headers: {'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$LA5xomoBC4BmompW35zlkulE2WYqewjnl0Qcwm8HkWLPjjEn8JYhe'}
+          }).then(response => response.json()).then(responseData => {
+            console.log('Success: ', responseData)
+             localStorage.setItem('bookLendingPlatformData', JSON.stringify(responseData.record))
+             updateBookList();
+          })
+        }
+        function putData(data) {
+          console.log('dddd', data)
+          fetch(url, {
+            method: "PUT",
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$LA5xomoBC4BmompW35zlkulE2WYqewjnl0Qcwm8HkWLPjjEn8JYhe' },
+            body: data
+          }).then(response => response.json()).then(responseData => console.log('Success: ', responseData))
+        }
+
+
         // 初始化頁面
-        updateBookList();
+        getData()
+        // updateBookList();
     </script>
 </body>
 </html>
